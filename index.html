@@ -3,241 +3,317 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
 <title>习惯打卡</title>
 <style>
-  /* ---------- 主题色：只在这里改颜色，全站跟着变 ---------- */
+  /* ---------- 设计变量：取值都来自 Apple 官网与 iOS 系统色 ---------- */
   :root {
-    --bg: #faf7f2;
-    --card: #ffffff;
-    --text: #35302b;
-    --muted: #8d837a;
-    --line: #ebe4db;
-    --accent: #e2703a;        /* 点亮时的颜色 */
-    --accent-soft: #fbe8dd;
-    --danger: #b4543c;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #1c1a18;
-      --card: #26231f;
-      --text: #eee7e0;
-      --muted: #9d938a;
-      --line: #37322c;
-      --accent: #f0864f;
-      --accent-soft: #3a2a20;
-      --danger: #e08a72;
-    }
+    color-scheme: light;              /* 只做浅色，不跟随系统深色 */
+    --bg: #ffffff;
+    --text: #1d1d1f;                  /* Apple 正文黑 */
+    --muted: #6e6e73;                 /* Apple 次级灰 */
+    --hairline: rgba(0, 0, 0, .07);
+    --glass: rgba(255, 255, 255, .62);
+    --glass-strong: rgba(255, 255, 255, .78);
+    --blue: #0071e3;                  /* Apple 官网蓝 */
+    --blue-deep: #0060c0;
+    --blue-soft: rgba(0, 113, 227, .12);
+    --red: #d70015;                   /* iOS 系统红 */
+    --radius: 22px;
+    --ease: cubic-bezier(.32, .72, 0, 1);   /* iOS 那种起步快、收尾稳的缓动 */
+    --rim: 0 0 0 1px rgba(0, 0, 0, .045);   /* 极细的玻璃外沿 */
+    --highlight: inset 0 1px 0 rgba(255, 255, 255, .9);   /* 顶部高光 */
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, .04),
+                   0 14px 34px -14px rgba(0, 0, 0, .18);
   }
 
   * { box-sizing: border-box; }
+  html { background: var(--bg); }
 
   body {
     margin: 0;
-    padding: 32px 16px 64px;
-    background: var(--bg);
+    padding: 56px 20px 80px;
     color: var(--text);
-    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", "PingFang SC",
-          "Microsoft YaHei", sans-serif;
+    font: 16px/1.47 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI",
+          "PingFang SC", "Microsoft YaHei", sans-serif;
+    letter-spacing: -.01em;
+    -webkit-font-smoothing: antialiased;
     -webkit-tap-highlight-color: transparent;
   }
 
-  main { max-width: 560px; margin: 0 auto; }
+  /* 背景的极淡色晕：玻璃要有东西可以虚化，才看得出“液态” */
+  .glow {
+    position: fixed; inset: -25% -15%;
+    z-index: 0; pointer-events: none;
+    background:
+      radial-gradient(32% 26% at 16% 14%, rgba(0, 113, 227, .14), transparent 68%),
+      radial-gradient(28% 22% at 86% 6%,  rgba(255, 55, 95, .09),  transparent 68%),
+      radial-gradient(34% 28% at 76% 84%, rgba(191, 90, 242, .10), transparent 70%),
+      radial-gradient(30% 26% at 10% 88%, rgba(48, 176, 199, .10), transparent 70%);
+    animation: drift 34s var(--ease) infinite alternate;
+  }
+
+  main { position: relative; z-index: 1; max-width: 620px; margin: 0 auto; }
 
   /* ---------- 顶部 ---------- */
-  header { margin-bottom: 20px; }
-  h1 { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: .01em; }
-  .date { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+  header { margin-bottom: 30px; }
+  h1 { margin: 0; font-size: 32px; font-weight: 600; letter-spacing: -.03em; }
+  .date { margin: 6px 0 0; color: var(--muted); font-size: 15px; }
 
-  .progress {
-    display: flex; align-items: center; gap: 12px;
-    margin-top: 14px;
-  }
+  .progress { display: flex; align-items: center; gap: 14px; margin-top: 18px; }
   .track {
-    flex: 1; height: 8px; border-radius: 99px;
-    background: var(--line); overflow: hidden;
+    flex: 1; height: 6px; border-radius: 99px;
+    background: rgba(0, 0, 0, .06);
+    box-shadow: inset 0 1px 1px rgba(0, 0, 0, .04);
+    overflow: hidden;
   }
   .bar {
     height: 100%; width: 0; border-radius: 99px;
-    background: var(--accent);
-    transition: width .35s ease;
+    background: linear-gradient(180deg, #3395ee, var(--blue));
+    transition: width .5s var(--ease);
   }
-  .count { font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .count { font-size: 15px; color: var(--muted); font-variant-numeric: tabular-nums; }
 
   #doneBanner {
-    margin: 12px 0 0; padding: 10px 14px;
-    border-radius: 12px;
-    background: var(--accent-soft);
-    color: var(--text); font-size: 14px;
-    animation: fadeUp .35s ease both;
+    position: relative; overflow: hidden;
+    margin: 16px 0 0; padding: 12px 18px;
+    border-radius: 18px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, .92), rgba(232, 243, 255, .78));
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(20px) saturate(180%);
+    box-shadow: var(--rim), var(--highlight),
+                0 12px 30px -16px rgba(0, 113, 227, .55);
+    color: #0b4f9e; font-size: 15px;
+    animation: rise .5s var(--ease) both;
+  }
+  /* 出现时划过一道光，替代原来撒粒子的庆祝 */
+  #doneBanner::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(105deg, transparent 32%,
+                rgba(255, 255, 255, .9) 50%, transparent 68%);
+    transform: translateX(-120%);
+    animation: sweep 1.3s .15s var(--ease);
   }
   #doneBanner[hidden] { display: none; }
 
   /* ---------- 小标题 ---------- */
-  h2 { margin: 0 0 10px; font-size: 15px; font-weight: 600; }
+  h2 { margin: 0 0 14px; font-size: 17px; font-weight: 600; letter-spacing: -.01em; }
 
   /* ---------- 添加习惯 ---------- */
-  form { display: flex; gap: 8px; margin: 0 0 6px; }
+  form { display: flex; gap: 10px; margin: 0 0 8px; }
   input[type="text"] {
     flex: 1; min-width: 0;
-    padding: 12px 14px;
+    padding: 13px 18px;
     font: inherit; color: var(--text);
-    background: var(--card);
-    border: 1px solid var(--line); border-radius: 12px;
+    background: var(--glass-strong);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(20px) saturate(180%);
+    border: none; border-radius: 999px;
+    box-shadow: var(--rim), var(--highlight), 0 1px 2px rgba(0, 0, 0, .03);
+    transition: box-shadow .22s var(--ease);
   }
-  input[type="text"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  input[type="text"]::placeholder { color: #96969b; }
+  input[type="text"]:focus {
+    outline: none;
+    box-shadow: 0 0 0 4px var(--blue-soft), var(--rim), var(--highlight);
+  }
   button {
-    font: inherit; cursor: pointer;
-    border: 1px solid var(--line); border-radius: 12px;
-    background: var(--card); color: var(--text);
+    font: inherit; color: var(--text);
+    cursor: pointer; border: none; background: transparent;
   }
   .add {
-    padding: 12px 18px; font-weight: 500;
-    background: var(--accent); color: #fff; border-color: transparent;
+    flex: none; padding: 13px 22px; border-radius: 999px;
+    background: var(--blue); color: #fff; font-weight: 500;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, .06),
+                0 10px 22px -10px rgba(0, 113, 227, .8);
+    transition: transform .2s var(--ease), background .2s var(--ease);
   }
+  .add:hover { background: var(--blue-deep); }
+  .add:active { transform: scale(.96); }
   .error {
-    margin: 0 0 4px; min-height: 20px;
-    font-size: 13px; color: var(--danger);
+    margin: 0 0 6px; min-height: 20px;
+    font-size: 13px; letter-spacing: 0; color: var(--red);
   }
 
-  /* ---------- 习惯列表 ---------- */
-  ul { list-style: none; margin: 8px 0 0; padding: 0; }
+  /* ---------- 习惯卡片：整个页面只有这一种玻璃表面 ---------- */
+  ul { list-style: none; margin: 12px 0 0; padding: 0; }
 
   .habit {
-    margin-bottom: 10px; padding: 14px;
-    background: var(--card);
-    border: 1px solid var(--line); border-radius: 14px;
+    margin-bottom: 12px; padding: 16px;
+    background: var(--glass);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    backdrop-filter: blur(24px) saturate(180%);
+    border-radius: var(--radius);
+    box-shadow: var(--rim), var(--highlight), var(--shadow-card);
   }
-  .habit-top { display: flex; align-items: center; gap: 12px; }
+  .habit-top { display: flex; align-items: center; gap: 14px; }
 
-  /* 点亮按钮：整个圆点就是开关 */
+  /* 点亮按钮：玻璃圆点，点亮后变蓝并浮出一枚白色对勾 */
   .circle {
-    flex: none;
-    width: 40px; height: 40px; padding: 0;
+    position: relative; flex: none;
+    width: 42px; height: 42px; padding: 0;
     border-radius: 50%;
-    border: 2px solid var(--line);
-    background: transparent;
-    transition: background .18s ease, border-color .18s ease, transform .12s ease;
+    background: rgba(255, 255, 255, .72);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    backdrop-filter: blur(16px) saturate(180%);
+    box-shadow: var(--rim), var(--highlight), 0 1px 2px rgba(0, 0, 0, .05);
+    transition: transform .22s var(--ease), background .22s var(--ease),
+                box-shadow .22s var(--ease);
   }
-  .circle:hover { border-color: var(--accent); }
+  .circle::before {
+    content: ''; position: absolute; left: 50%; top: 50%;
+    width: 6px; height: 11px; margin: -8px 0 0 -3px;
+    border: solid #fff; border-width: 0 2px 2px 0;
+    border-radius: 1px;
+    transform: rotate(45deg) scale(.5);
+    opacity: 0;
+    transition: opacity .18s var(--ease), transform .3s var(--ease);
+  }
   .circle[aria-pressed="true"] {
-    background: var(--accent);
-    border-color: var(--accent);
+    background: linear-gradient(180deg, #3d95ee, var(--blue));
+    box-shadow: 0 1px 2px rgba(0, 113, 227, .3),
+                0 10px 20px -10px rgba(0, 113, 227, .7),
+                inset 0 1px 0 rgba(255, 255, 255, .4);
   }
-  /* 点亮瞬间的小反馈 */
-  .circle.pop { animation: pop .4s ease; }
+  .circle[aria-pressed="true"]::before { opacity: 1; transform: rotate(45deg) scale(1); }
+  .circle:hover { transform: scale(1.04); }
+  .circle:active { transform: scale(.9); }
+  /* 点亮瞬间：一圈光晕扩散出去 */
+  .circle.pop::after {
+    content: ''; position: absolute; inset: -6px; border-radius: 50%;
+    border: 2px solid var(--blue);
+    animation: ring .6s var(--ease) forwards;
+  }
 
   .info { flex: 1; min-width: 0; }
-  .name {
-    font-weight: 500; word-break: break-word;
-  }
-  .habit[data-done="true"] .name { color: var(--muted); text-decoration: line-through; }
-  .meta { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .name { font-weight: 500; letter-spacing: -.01em; word-break: break-word; }
+  .habit[data-done="true"] .name { color: var(--muted); }
+  .meta { margin-top: 2px; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
 
   .del {
-    flex: none;
-    width: 32px; height: 32px;
-    border: none; background: transparent;
-    color: var(--muted); font-size: 18px; line-height: 1;
-    border-radius: 8px;
+    flex: none; width: 32px; height: 32px; padding: 0;
+    border-radius: 50%;
+    color: #96969b; font-size: 17px; line-height: 1;
+    transition: background .2s var(--ease), color .2s var(--ease), transform .2s var(--ease);
   }
-  .del:hover { color: var(--danger); background: var(--accent-soft); }
+  .del:hover { background: rgba(0, 0, 0, .05); color: var(--red); }
+  .del:active { transform: scale(.9); }
 
   /* ---------- 最近 7 天 ---------- */
-  .week {
-    display: flex; gap: 6px;
-    margin: 12px 0 0 52px;   /* 与圆点右侧对齐 */
-  }
-  .day { width: 26px; text-align: center; }
+  .week { display: flex; gap: 8px; margin: 14px 0 0 56px; }
+  .day { flex: none; width: 28px; text-align: center; }
   .day span { display: block; font-size: 11px; color: var(--muted); }
   .dot {
-    width: 100%; height: 16px; margin-top: 3px;
-    border-radius: 5px;
-    background: var(--line);
+    width: 100%; height: 18px; margin-top: 4px;
+    border-radius: 7px;
+    background: rgba(0, 0, 0, .055);
+    box-shadow: inset 0 1px 1px rgba(0, 0, 0, .03);
+    transition: background .3s var(--ease), box-shadow .3s var(--ease);
   }
-  .day[data-on="true"] .dot { background: var(--accent); }
+  .day[data-on="true"] .dot {
+    background: linear-gradient(180deg, #3d95ee, var(--blue));
+    box-shadow: 0 1px 2px rgba(0, 113, 227, .25);
+  }
   .day[data-today="true"] span { color: var(--text); font-weight: 500; }
-  .day[data-today="true"] .dot { box-shadow: 0 0 0 2px var(--bg), 0 0 0 3px var(--accent); }
+  .day[data-today="true"] .dot { box-shadow: 0 0 0 3px rgba(0, 113, 227, .18); }
 
-  /* ---------- 空状态 / 页脚 ---------- */
+  /* ---------- 空状态 ---------- */
   .empty {
-    margin: 24px 0; text-align: center;
+    margin: 28px 0; text-align: center;
     color: var(--muted); font-size: 14px;
   }
   .empty[hidden] { display: none; }
 
-  /* ---------- 坏习惯：只多了一个计数条 ---------- */
-  section { margin-top: 28px; }
-  .counters { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+  /* ---------- 坏习惯：同样一张玻璃卡片，只多了两个计数条 ---------- */
+  section { margin-top: 38px; }
+  .counters { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
   .counter {
     display: flex; align-items: center; gap: 4px;
-    padding: 5px 10px 5px 6px;
-    border: 1px solid var(--line); border-radius: 10px;
+    padding: 6px 14px 6px 8px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .78);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    backdrop-filter: blur(16px) saturate(180%);
+    box-shadow: var(--rim), var(--highlight);
+    transition: background .22s var(--ease), box-shadow .22s var(--ease);
   }
-  .counter.held[data-on="true"] { background: var(--accent-soft); border-color: transparent; }
+  /* “控制住了”是好事，给它一点淡蓝的底色 */
+  .counter.held[data-on="true"] {
+    background: linear-gradient(180deg, rgba(236, 245, 255, .95), rgba(219, 237, 255, .9));
+    box-shadow: var(--highlight), 0 1px 2px rgba(0, 113, 227, .12);
+  }
   .step {
-    width: 24px; height: 24px; padding: 0;
-    border: none; background: transparent; color: var(--muted);
-    font-size: 16px; line-height: 1; border-radius: 6px;
+    width: 26px; height: 26px; padding: 0;
+    border-radius: 50%;
+    color: #96969b; font-size: 16px; line-height: 1;
+    transition: background .2s var(--ease), color .2s var(--ease);
   }
-  .step:hover { background: var(--accent-soft); color: var(--danger); }
+  .step:hover { background: rgba(0, 0, 0, .05); color: var(--red); }
   .num {
-    min-width: 28px; padding: 2px 4px;
-    border: none; background: transparent;
-    color: var(--text); font-size: 18px; font-variant-numeric: tabular-nums;
+    min-width: 30px; padding: 2px 6px; border-radius: 10px;
+    color: var(--text); font-size: 18px; font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    transition: transform .2s var(--ease), background .2s var(--ease);
   }
-  .num:hover { background: var(--accent-soft); border-radius: 8px; }
-  .counter.held .num { color: var(--accent); font-weight: 500; }
+  .num:hover { background: rgba(0, 0, 0, .045); }
+  .num:active { transform: scale(.92); }
+  .counter.held .num { color: var(--blue); }
   .clabel { font-size: 13px; color: var(--muted); }
 
+  /* ---------- 页脚 ---------- */
   footer {
-    margin-top: 28px; padding-top: 16px;
-    border-top: 1px solid var(--line);
+    margin-top: 44px; padding-top: 20px;
+    border-top: 1px solid var(--hairline);
     display: flex; justify-content: space-between; align-items: center; gap: 12px;
     font-size: 13px; color: var(--muted);
   }
-  .reset { padding: 6px 10px; font-size: 13px; color: var(--muted); }
-  .reset:hover { color: var(--danger); }
-
-  /* ---------- 动画 ---------- */
-  @keyframes pop {
-    0%   { transform: scale(1); }
-    45%  { transform: scale(1.22); }
-    100% { transform: scale(1); }
+  .reset {
+    padding: 7px 13px; border-radius: 999px;
+    font-size: 13px; color: var(--muted);
+    transition: background .2s var(--ease), color .2s var(--ease);
   }
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(4px); }
+  .reset:hover { background: rgba(0, 0, 0, .05); color: var(--red); }
+
+  /* ---------- 动效：克制，只用来确认动作被接收 ---------- */
+  @keyframes drift {
+    from { transform: translate3d(0, 0, 0) scale(1); }
+    to   { transform: translate3d(-2%, 2%, 0) scale(1.06); }
+  }
+  @keyframes ring {
+    from { opacity: .45; transform: scale(.7); }
+    to   { opacity: 0; transform: scale(1.4); }
+  }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(6px); }
     to   { opacity: 1; transform: none; }
   }
-  @keyframes floatUp {
-    from { opacity: 1; transform: translate(-50%, 0); }
-    to   { opacity: 0; transform: translate(-50%, -22px); }
+  @keyframes sweep {
+    from { transform: translateX(-120%); }
+    to   { transform: translateX(120%); }
   }
-  @keyframes fly {
-    from { opacity: 1; transform: translate(0, 0) scale(1); }
-    to   { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(.4); }
+  @keyframes floatUp {
+    from { opacity: .9; transform: translate(-50%, 0); }
+    to   { opacity: 0; transform: translate(-50%, -18px); }
   }
   .plusone {
     position: absolute;
-    font-size: 12px; color: var(--accent);
-    animation: floatUp .7s ease-out forwards;
-    pointer-events: none;
-  }
-  .spark {
-    position: fixed; width: 6px; height: 6px; border-radius: 50%;
-    background: var(--accent);
-    animation: fly .8s ease-out forwards;
+    font-size: 13px; font-weight: 500; color: var(--blue);
+    animation: floatUp .75s var(--ease) forwards;
     pointer-events: none;
   }
   @media (prefers-reduced-motion: reduce) {
     * { animation: none !important; transition: none !important; }
   }
 
-  @media (max-width: 380px) {
-    .week { margin-left: 0; }
+  @media (max-width: 400px) {
+    body { padding: 36px 16px 64px; }
+    h1 { font-size: 27px; }
+    .week { margin-left: 0; }   /* 窄屏时 7 天格子独占一行 */
   }
 </style>
 </head>
 <body>
+<div class="glow" aria-hidden="true"></div>
 <main>
   <header>
     <h1>习惯打卡</h1>
@@ -544,7 +620,6 @@ function toggleHabit(id) {
 
   const todayStr = dateKey(new Date());
   const wasDone = !!habit.done[todayStr];
-  const wasAllDone = allDoneToday();
 
   if (wasDone) delete habit.done[todayStr];
   else {
@@ -554,10 +629,7 @@ function toggleHabit(id) {
   save();
   render();
 
-  if (!wasDone) {
-    playPlusOne(id);
-    if (!wasAllDone && allDoneToday()) sparkle();
-  }
+  if (!wasDone) playPlusOne(id);   // 全部完成时，横幅会自己淡入并扫过一道光
 }
 
 function allDoneToday() {
@@ -617,7 +689,7 @@ function deleteBad(id) {
 }
 
 /* =====================================================================
-   5) 反馈：进度条、+1 飘字、全部完成时的小庆祝
+   5) 反馈：进度条、+1 飘字、全部完成的横幅
    ===================================================================== */
 function showError(el, msg) {
   el.textContent = msg;
@@ -630,26 +702,10 @@ function playPlusOne(id) {
   tag.className = 'plusone';
   tag.textContent = '+1';
   row.style.position = 'relative';
-  tag.style.left = '34px';
-  tag.style.top = '10px';
+  tag.style.left = '37px';   // 对准圆点的圆心
+  tag.style.top = '9px';
   row.append(tag);
   setTimeout(() => tag.remove(), 700);
-}
-
-function sparkle() {
-  const rect = doneBannerEl.getBoundingClientRect();
-  const cx = rect.left + rect.width / 2;
-  const cy = rect.top + rect.height / 2;
-  for (let i = 0; i < 14; i++) {
-    const s = document.createElement('div');
-    s.className = 'spark';
-    s.style.left = cx + 'px';
-    s.style.top = cy + 'px';
-    s.style.setProperty('--dx', (Math.random() * 160 - 80).toFixed(0) + 'px');
-    s.style.setProperty('--dy', (Math.random() * -90 - 20).toFixed(0) + 'px');
-    document.body.append(s);
-    setTimeout(() => s.remove(), 800);
-  }
 }
 
 /* =====================================================================
